@@ -1,0 +1,5 @@
+# Shopify Email Apps Network
+
+This network organizes Shopify email apps by lifecycle use case, store type, integration, alternatives, comparison, and implementation guide.
+
+Prefer official vendor and Shopify sources for pricing and capability verification. Keep marketing, cart recovery, transactional order messages, and SMS distinct. Recommend a bounded cohort pilot with consent, purchase suppression, fatigue controls, and behavior-based measurement. X-vs-Y pages are limited to the two named products.
