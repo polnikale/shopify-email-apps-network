@@ -1,36 +1,309 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { APPS, SEGMENTS, USE_CASES, appBySlug, appPairs, description, pageTitle, siteFromHost } from '../content';
+import { APPS, SEGMENTS, USE_CASES, description, pageTitle, siteFromHost } from '../content';
+
 const site = siteFromHost(Astro.request.headers.get('host'));
 const path = '';
 const title = pageTitle(site, path);
 const desc = description(site, path);
 const recommended = APPS.filter(a => a.channels.includes(site.channel) || a.channels.includes('marketing')).slice(0,10);
+
+const faqs = [
+  {
+    q: `What should a ${site.primaryKeyword.toLowerCase()} shortlist actually prove before I install anything?`,
+    a: `A credible shortlist proves three things with your own store data: that the app receives Shopify checkout, order, refund, and consent events with usable timestamps; that your team can rebuild welcome, abandoned checkout, and post-purchase flows with real exclusion logic; and that the economics work once you model retained profiles, message volume, app fees, and labor. Pricing pages change often, so check each vendor's official pricing page before you sign anything.`
+  },
+  {
+    q: 'How do I keep a marketing app from messaging customers who just purchased?',
+    a: `Purchaser suppression is a data problem, not a settings toggle. The app must ingest Shopify order events quickly and let you exclude recent purchasers at the segment, flow, and campaign level. During a pilot, place a test order and confirm that abandoned-checkout and browse messages stop immediately, that post-purchase messaging respects fulfillment timing, and that winback flows do not fire against customers who reordered on their own. If the vendor cannot demonstrate clean suppression, treat attributed revenue with suspicion.`
+  },
+  {
+    q: 'How should I model the margin impact of a Shopify email or SMS app?',
+    a: `Build a simple monthly model: platform fee, per-message or per-profile overage, SMS unit costs where relevant, discount codes actually redeemed in recovered orders, transaction fees, and the hours your team spends maintaining flows. Then compare incremental gross margin — not attributed revenue — against that total. Attributed revenue almost always overstates profit because it counts orders that would have happened anyway. Reconcile attributed conversions against real Shopify orders before you renew.`
+  },
+  {
+    q: 'What consent and compliance questions matter most for Shopify stores?',
+    a: `Ask how the app records email and SMS consent separately, how it syncs unsubscribe and opt-out state back to the Shopify customer record, whether it honors quiet hours and frequency caps for SMS, and how it handles customer data deletion requests. Stores in regulated categories should also confirm the vendor supports your consent evidence trail. These checks are boring, but they prevent the most expensive class of retention mistakes.`
+  },
+  {
+    q: 'Klaviyo vs Omnisend: which should a Shopify store start with?',
+    a: `Klaviyo is the stronger foundation when segmentation depth, catalog logic, and reporting will be operated weekly by someone on your team. Omnisend is the faster path when a lean store needs welcome, cart, and post-purchase flows live in days. Our full breakdown is on the Klaviyo vs Omnisend comparison page, and neither answer changes if your bottleneck is list capture — fix that first.`
+  },
+  {
+    q: 'Is Shopify Email enough, or do I need a third-party app?',
+    a: `Shopify Email is a sensible starting point for product-drop newsletters and simple announcements with minimal overhead. It becomes a constraint when you need behavior-driven branching, catalog-aware segmentation, suppression logic, or holdout measurement. Many stores run Shopify Email first, then graduate to a specialist once repeat-purchase revenue justifies the operating cost — the migration is a known, well-trodden path.`
+  }
+];
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(f => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a }
+  }))
+};
+
+const matchupLinks = [
+  { slug: 'klaviyo-vs-omnisend', label: 'Klaviyo vs Omnisend', note: 'Depth versus speed for lifecycle teams' },
+  { slug: 'klaviyo-vs-privy', label: 'Klaviyo vs Privy', note: 'Lifecycle platform versus capture-first simplicity' },
+  { slug: 'omnisend-vs-privy', label: 'Omnisend vs Privy', note: 'Full automation versus capture-first simplicity' },
+  { slug: 'omnisend-vs-postscript', label: 'Omnisend vs Postscript', note: 'Multichannel baseline versus SMS-native focus' }
+];
+
+const costLines = [
+  ['Platform fee', 'Monthly subscription that usually scales with stored profiles or contacts — not with sends'],
+  ['Message volume', 'Email overage per thousand sends; SMS priced per message or per segment'],
+  ['Profile growth', 'Imported, synced, and dormant contacts can inflate the billing tier without adding revenue'],
+  ['Discount load', 'Recovered orders often carry coupon costs and transaction fees that shrink net margin'],
+  ['Operating labor', 'Flow maintenance, creative refreshes, segment audits, and deliverability monitoring'],
+  ['Migration cost', 'Rebuilding flows, remapping segments, and re-verifying consent when you switch tools']
+];
 ---
 <BaseLayout title={title} description={desc} site={site} path="/">
+  <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+
   <section class="relative overflow-hidden border-b border-emerald-900/10 bg-[radial-gradient(circle_at_top_left,#d9f99d,transparent_30%),linear-gradient(135deg,#f7faf5,#ecfdf5_45%,#ffffff)] py-16 md:py-24">
     <div class="container grid gap-10 lg:grid-cols-[1.15fr_.85fr] lg:items-center">
       <div>
         <span class="badge">Updated for Shopify stores in 2026</span>
         <h1 class="hero-title mt-5">Best {site.primaryKeyword} for stores that care about repeat revenue</h1>
-        <p class="mt-6 max-w-2xl text-xl text-slate-700">{site.heroPromise} This site is written specifically for <strong>{site.primaryKeyword}</strong>, not copied from a generic SaaS software list.</p>
-        <div class="mt-8 flex flex-wrap gap-3"><a class="btn btn-primary" href="/apps">Compare apps</a><a class="btn btn-secondary" href="/use-cases/abandoned-cart">Start with cart recovery</a></div>
+        <p class="mt-6 max-w-2xl text-xl text-slate-700">
+          {site.heroPromise} This site is written specifically for <strong>{site.primaryKeyword}</strong>,
+          not copied from a generic SaaS software list.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a class="btn btn-primary" href="/apps">Compare apps</a>
+          <a class="btn btn-secondary" href="/use-cases/abandoned-cart">Start with cart recovery</a>
+        </div>
       </div>
       <div class="card bg-white/80">
         <div class="text-sm font-bold uppercase tracking-wide text-emerald-700">Quick verdict</div>
         <h2 class="mt-3 text-3xl font-bold text-slate-950">Shopify-native beats generic automation.</h2>
-        <p class="mt-4 text-slate-700">The best {site.keywordPlural} understand customers, products, orders, discount codes, inventory, checkout events, consent, and repeat purchase timing. {site.bestOverallReason}</p>
+        <p class="mt-4 text-slate-700">
+          The best {site.keywordPlural} understand customers, products, orders, discount codes, inventory,
+          checkout events, consent, and repeat purchase timing. {site.bestOverallReason}
+        </p>
         <ul class="mt-6 space-y-3 text-sm text-slate-700">
-          <li>✓ Built around Shopify customer and order data</li><li>✓ Includes lifecycle, cart recovery, and post-purchase flows</li><li>✓ Prioritizes revenue quality over vanity open rates</li>
+          <li>✓ Built around Shopify customer and order data</li>
+          <li>✓ Includes lifecycle, cart recovery, and post-purchase flows</li>
+          <li>✓ Prioritizes revenue quality over vanity open rates</li>
         </ul>
       </div>
     </div>
   </section>
+
   <section class="container py-14">
-    <div class="mb-8 flex items-end justify-between gap-6"><div><span class="badge">Ranked shortlist</span><h2 class="mt-3 text-3xl font-bold">Top {site.shortName.toLowerCase()} to evaluate first</h2></div><a class="link" href="/apps">View all apps →</a></div>
-    <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{recommended.map((app, i) => <a class="card hover:-translate-y-1 transition" href={`/apps/${app.slug}`}><div class="text-sm font-bold text-emerald-700">#{i+1}</div><h3 class="mt-2 text-xl font-bold text-slate-950">{app.name}</h3><p class="mt-2 text-sm text-slate-600">{app.bestFor}</p><p class="mt-4 text-sm font-semibold text-slate-900">{app.pricing}</p></a>)}</div>
+    <div class="mb-8 flex items-end justify-between gap-6">
+      <div>
+        <span class="badge">Ranked shortlist</span>
+        <h2 class="mt-3 text-3xl font-bold">Top {site.shortName.toLowerCase()} to evaluate first</h2>
+      </div>
+      <a class="link" href="/apps">View all apps →</a>
+    </div>
+    <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {recommended.map((app, i) => (
+        <a class="card hover:-translate-y-1 transition" href={`/apps/${app.slug}`}>
+          <div class="text-sm font-bold text-emerald-700">#{i+1}</div>
+          <h3 class="mt-2 text-xl font-bold text-slate-950">{app.name}</h3>
+          <p class="mt-2 text-sm text-slate-600">{app.bestFor}</p>
+          <p class="mt-4 text-sm font-semibold text-slate-900">{app.pricing}</p>
+        </a>
+      ))}
+    </div>
   </section>
-  <section class="bg-white py-14"><div class="container grid gap-8 md:grid-cols-3"><div class="md:col-span-1"><span class="badge">SEO map</span><h2 class="mt-3 text-3xl font-bold">100+ unique pages per domain</h2><p class="mt-4 text-slate-600">Each domain renders its own titles, intros, recommendations, internal links, and Shopify-specific copy for the exact keyword family.</p></div><div class="grid gap-4 md:col-span-2 sm:grid-cols-2">{USE_CASES.slice(0,8).map(u=><a class="card" href={`/use-cases/${u.slug}`}><h3 class="font-bold text-slate-950">{u.name}</h3><p class="mt-2 text-sm text-slate-600">{u.job}</p></a>)}</div></div></section>
-  <section class="container py-14"><h2 class="text-3xl font-bold">Popular store-type guides</h2><div class="mt-6 grid gap-4 md:grid-cols-3">{SEGMENTS.slice(0,9).map(s=><a class="card" href={`/for/${s.slug}`}><h3 class="font-bold">{s.name}</h3><p class="mt-2 text-sm text-slate-600">Handles {s.pain}.</p></a>)}</div></section>
-  <section class="container pb-16"><div class="card"><span class="badge">Decision rules</span><h2 class="mt-3 text-3xl font-bold">How to validate a Shopify app shortlist</h2><p class="mt-4 max-w-3xl text-slate-700">A feature list is not evidence of incremental revenue. Run the shortlist against the store’s highest-value flow and document the operating cost before installing more apps.</p><div class="mt-6 overflow-x-auto"><table class="data-table"><thead><tr><th>Question</th><th>Evidence to collect</th><th>Stop condition</th></tr></thead><tbody><tr><td>Does the app receive the right Shopify event?</td><td>Test order, catalog, inventory, consent, and fulfillment events</td><td>Duplicate, delayed, or unmapped events</td></tr><tr><td>Does it improve a real lifecycle job?</td><td>Eligible cohort, holdout, conversion, margin, and repeat purchase</td><td>Attributed clicks rise without incremental profit</td></tr><tr><td>Can the team operate it safely?</td><td>Permissions, suppression, collision controls, owner, and review cadence</td><td>No clear owner or opt-out path</td></tr><tr><td>Is the economics claim current?</td><td>Official pricing, app fees, message volume, labor, and discounts</td><td>Decision depends on stale or opaque pricing</td></tr></tbody></table></div></div></section>
+
+  <section class="bg-white py-14">
+    <div class="container grid gap-8 md:grid-cols-3">
+      <div class="md:col-span-1">
+        <span class="badge">SEO map</span>
+        <h2 class="mt-3 text-3xl font-bold">100+ unique pages per domain</h2>
+        <p class="mt-4 text-slate-700">
+          Each domain renders its own titles, intros, recommendations, internal links, and Shopify-specific
+          copy for the exact keyword family. Follow the map below into the guides that match your store's
+          next ninety days of retention work.
+        </p>
+      </div>
+      <div class="grid gap-4 md:col-span-2 sm:grid-cols-2">
+        {USE_CASES.slice(0,8).map(u => (
+          <a class="card" href={`/use-cases/${u.slug}`}>
+            <h3 class="font-bold text-slate-950">{u.name}</h3>
+            <p class="mt-2 text-sm text-slate-600">{u.job}.</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="container py-14">
+    <span class="badge">Consent and suppression</span>
+    <h2 class="mt-3 text-3xl font-bold">The two controls that separate serious apps from list burners</h2>
+    <div class="mt-6 grid gap-5 md:grid-cols-2">
+      <div class="card">
+        <h3 class="text-xl font-bold text-slate-950">Consent handling</h3>
+        <p class="mt-3 text-slate-700">
+          A {site.primaryKeyword.toLowerCase().replace(/s$/, '')} candidate must record email and SMS consent
+          separately, sync opt-out state back to the Shopify customer record, and respect quiet hours and
+          frequency caps on text messaging. Test it: opt a profile out, place an order, and confirm the
+          suppression survives every sync direction. Vague answers here predict deliverability and
+          compliance problems later.
+        </p>
+      </div>
+      <div class="card">
+        <h3 class="text-xl font-bold text-slate-950">Purchaser suppression</h3>
+        <p class="mt-3 text-slate-700">
+          Nothing destroys trust faster than an abandoned-cart text sent after checkout completed. The app
+          needs to exclude recent purchasers at the segment, flow, and campaign level with Shopify order
+          events arriving in near real time. During every pilot, place test orders and confirm that cart,
+          browse, and winback messaging stops immediately — and that post-purchase sequences respect
+          fulfillment timing.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-14">
+    <div class="container">
+      <span class="badge">Economics</span>
+      <h2 class="mt-3 text-3xl font-bold">Where the money actually goes</h2>
+      <p class="mt-4 max-w-3xl text-slate-700">
+        Attributed revenue is not profit. Model these cost lines against incremental gross margin before
+        you commit to any platform, and revisit the model every quarter as your list and message volume grow.
+      </p>
+      <div class="mt-6 overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr><th>Cost line</th><th>What to model</th></tr>
+          </thead>
+          <tbody>
+            {costLines.map(([line, detail]) => (
+              <tr><td class="font-semibold">{line}</td><td>{detail}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="container py-14">
+    <span class="badge">Pricing deep-dive</span>
+    <h2 class="mt-3 text-3xl font-bold">How to read pricing pages without getting surprised</h2>
+    <div class="mt-6 grid gap-5 md:grid-cols-2">
+      <article class="card prose-shopify">
+        <h3>Tiers rarely tell the whole story</h3>
+        <p>
+          Most {site.keywordPlural} price on stored contacts or profiles, with message volume, SMS units,
+          seats, and premium features priced separately or gated by tier. The plan that looks cheapest at
+          signup is often the most expensive at twice your current list size. Ask every vendor for a written
+          quote at your current profile count and at 2× growth, with email, SMS, and overage broken out.
+        </p>
+        <h3>Verify against official sources</h3>
+        <p>
+          Pricing changes frequently and this page is not a pricing authority. Always confirm current plans,
+          free-tier limits, and usage rates on each vendor's official pricing page or Shopify App Store
+          listing before making a budget decision. If a vendor will not put overage terms in writing, treat
+          that as a finding.
+        </p>
+      </article>
+      <div class="card">
+        <h3 class="text-xl font-bold text-slate-950">Pricing questions to send every vendor</h3>
+        <ul class="mt-4 space-y-3 text-sm text-slate-700">
+          <li>• What counts as a billable profile — imported, synced, dormant, or only messaged contacts?</li>
+          <li>• Is SMS priced per message or per segment, and do quiet hours or long codes change the rate?</li>
+          <li>• Which features (holdouts, advanced attribution, API limits) are gated behind higher tiers?</li>
+          <li>• What happens to billing when a list-cleanup removes inactive profiles?</li>
+          <li>• Are there separate charges for seats, support levels, or Shopify Points of Sale locations?</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-14">
+    <div class="container">
+      <span class="badge">Matchups</span>
+      <h2 class="mt-3 text-3xl font-bold">Head-to-head comparisons Shopify teams read first</h2>
+      <div class="mt-6 grid gap-5 md:grid-cols-2">
+        {matchupLinks.map(m => (
+          <a class="card hover:-translate-y-1 transition" href={`/compare/${m.slug}`}>
+            <h3 class="text-xl font-bold text-slate-950">{m.label}</h3>
+            <p class="mt-2 text-sm text-slate-600">{m.note}.</p>
+            <p class="mt-3 text-sm font-semibold text-emerald-700">Read the full comparison →</p>
+          </a>
+        ))}
+      </div>
+      <p class="mt-6 text-sm text-slate-600">
+        See every pairing in the <a class="link" href="/compare">comparison hub</a>, or browse
+        <a class="link" href="/alternatives/omnisend-alternative"> alternatives to the default choice</a>.
+      </p>
+    </div>
+  </section>
+
+  <section class="container py-14">
+    <h2 class="text-3xl font-bold">Popular store-type guides</h2>
+    <div class="mt-6 grid gap-4 md:grid-cols-3">
+      {SEGMENTS.slice(0,9).map(s => (
+        <a class="card" href={`/for/${s.slug}`}>
+          <h3 class="font-bold">{s.name}</h3>
+          <p class="mt-2 text-sm text-slate-600">Handles {s.pain}.</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="bg-white py-14">
+    <div class="container">
+      <span class="badge">FAQ</span>
+      <h2 class="mt-3 text-3xl font-bold">Questions Shopify merchants ask before choosing</h2>
+      <div class="mt-6 space-y-4">
+        {faqs.map(f => (
+          <details class="card">
+            <summary class="cursor-pointer text-lg font-bold text-slate-950">{f.q}</summary>
+            <p class="mt-3 text-slate-700">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="container pb-16">
+    <div class="card">
+      <span class="badge">Decision rules</span>
+      <h2 class="mt-3 text-3xl font-bold">How to validate a Shopify app shortlist</h2>
+      <p class="mt-4 max-w-3xl text-slate-700">
+        A feature list is not evidence of incremental revenue. Run the shortlist against the store's
+        highest-value flow and document the operating cost before installing more apps. If you need a
+        framework first, start with the <a class="link" href="/guides">app selection guide</a>.
+      </p>
+      <div class="mt-6 overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr><th>Question</th><th>Evidence to collect</th><th>Stop condition</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Does the app receive the right Shopify event?</td>
+              <td>Test order, catalog, inventory, consent, and fulfillment events</td>
+              <td>Duplicate, delayed, or unmapped events</td>
+            </tr>
+            <tr>
+              <td>Does it improve a real lifecycle job?</td>
+              <td>Eligible cohort, holdout, conversion, margin, and repeat purchase</td>
+              <td>Attributed clicks rise without incremental profit</td>
+            </tr>
+            <tr>
+              <td>Can the team operate it safely?</td>
+              <td>Permissions, suppression, collision controls, owner, and review cadence</td>
+              <td>No clear owner or opt-out path</td>
+            </tr>
+            <tr>
+              <td>Is the economics claim current?</td>
+              <td>Official pricing, app fees, message volume, labor, and discounts</td>
+              <td>Decision depends on stale or opaque pricing</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 </BaseLayout>
